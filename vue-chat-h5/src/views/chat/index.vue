@@ -1,7 +1,7 @@
 <template>
     <div>
         <section class="top">
-            <img class="head" src="../../assets/default.png"/>
+            <img class="head" src="../../assets/ico-exit.png" @click="exit"/>
             <span class="name">{{'群聊('+userCount+')'}}</span>
             <div class="voice" @click="changeVoice">
                 <img v-if="voiceOpen" class="icon" src="../../assets/soundOn.svg"/>
@@ -59,7 +59,7 @@
                 stompClient: null,
                 voiceOpen: true,
                 content: '',
-                userCount:0,
+                userCount: 0,
                 //聊天记录
                 records: [
                     // {
@@ -169,6 +169,24 @@
                     // on close
                     this.$router.replace({path: '/login'})
                 });
+            },
+            exit() {
+
+                this.$dialog.confirm({
+                    title: '提示',
+                    message: '确认退出当前群聊,是否继续?'
+                }).then(() => {
+                    // 断开连接
+                    this.stompClient.disconnect();
+
+                    // 清空Token
+                    removeToken();
+
+                    // 跳转登录页
+                    this.$router.replace({path: '/login'})
+                }).catch(() => {
+                    // on cancel
+                });
             }
         },
         // updated: function () {
@@ -210,7 +228,8 @@
                 // 单点登录
                 self.login(loginId);
             }, (err) => {
-                // 退出登录
+                console.log(err)
+                // 清空Token
                 removeToken();
 
                 this.$dialog.alert(
@@ -221,7 +240,6 @@
                     // on close
                     this.$router.replace({path: '/login'})
                 });
-                console.log(err)
             })
         }
     }

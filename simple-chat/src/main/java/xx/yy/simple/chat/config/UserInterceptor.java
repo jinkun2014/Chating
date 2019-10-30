@@ -77,7 +77,7 @@ public class UserInterceptor implements ChannelInterceptor {
         if (GreetingController.userMap.containsKey(principal.getName())) {
             Greeting greeting = GreetingController.userMap.remove(principal.getName());
             greeting.setContent(principal.getName() + " 离开聊天!");
-            greeting.setUserCount(userRegistry.getUserCount());
+            greeting.setUserCount(GreetingController.userMap.size());
             messagingTemplate.convertAndSend("/from:server/greetings", greeting);
         }
     }
