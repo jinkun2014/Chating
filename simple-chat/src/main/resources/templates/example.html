@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js"></script>
+    <script type="text/javascript">
+        var stompClient = null;
+        var loginId;
+
+        function login() {
+            loginId = new Date().getTime();
+            var name = document.getElementById("name").value;
+
+            var socket = new SockJS("/chatroom");
+            stompClient = Stomp.over(socket);
+            stompClient.connect({
+                // name:name
+            }, function (frame) {
+                setConnected(true);
+                console.log(frame);
+                // 登录&登出
+                stompClient.subscribe("/from:server/greetings", function (response) {
+                    console.log(`1:${response.body}`)
+                    showGreeting(JSON.parse(response.body).content);
+                });
+                // 群聊
+                stompClient.subscribe("/from:server/messaging", function (response) {
+                    console.log(`2:${response.body}`)
+                    showMessage(JSON.parse(response.body).content);
+                })
+                // 单聊
+                stompClient.subscribe("/from:server/single/" + loginId, function (response) {
+                    console.log(`3:${response.body}`)
+                    showMessage(JSON.parse(response.body).content);
+                    logout();
+                })
+                sendName();
+            });
+
+        }
+
+        function setConnected(connected) {
+            document.getElementById("message").disabled = !connected;
+            document.getElementById("send").disabled = !connected;
+            document.getElementById("name").disabled = connected;
+            document.getElementById("connect").disabled = connected;
+            document.getElementById("disconnect").disabled = !connected;
+        }
+
+        function showGreeting(content) {
+            var history = document.getElementById('history');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.appendChild(document.createTextNode(content));
+            history.appendChild(p);
+        }
+
+        function showMessage(message) {
+            var history = document.getElementById('history');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.appendChild(document.createTextNode(message));
+            history.appendChild(p);
+        }
+
+        function sendName() {
+            var name = document.getElementById("name").value;
+            stompClient.send("/from:app/login", {}, JSON.stringify({'loginId': loginId+"", 'name': name}));
+        }
+
+        function sendMessage() {
+            var name = document.getElementById("name").value;
+            var message = document.getElementById("message").value;
+            stompClient.send("/from:app/messaging", {}, JSON.stringify({'name': name, 'content': message}));
+
+        }
+
+        function logout() {
+            var name = document.getElementById("name").value;
+            stompClient.send("/from:app/logout", {}, JSON.stringify({'name': name}));
+            stompClient.disconnect();
+            setConnected(false);
+        }
+    </script>
+    <title>Welcome Group Chat!</title>
+</head>
+
+<body>
+<p id="history"></p> <br>
+<input id="message" placeholder="What wanna say?" disabled="disabled"/>
+<button id="send" disabled="disabled" onclick="sendMessage()">Send</button>
+<br>
+<input id="name" placeholder="What's your name?"/>
+<button id="connect" onclick="login()">Connect</button>
+<button id="disconnect" disabled="disabled" onclick="logout()">Disconnect</button>
+</body>
+</html>
